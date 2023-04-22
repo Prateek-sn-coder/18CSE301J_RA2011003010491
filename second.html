@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Q - Q Plot </title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="index.html">🏠</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNav">
+			<ul class="navbar-nav">
+				<li class="nav-item active">
+					<a class="nav-link" href="abt.html">About</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="tab.html">Tableau</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="gp.html">Gephi</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="pyv.html">Python</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="ddd.html">D3</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+    <center>
+        <br>
+    <h3>Q-Q Plot Visualization of FT-PAY by departments Over years</h3>
+<br><br>
+
+  <div>
+    <label for="department">Select a department:</label>
+    <select id="department">
+      <!-- Here you will add options dynamically -->
+    </select>
+  </div>
+
+  <svg id="chart"></svg>
+</center>
+  <script>
+
+    // Load the data from the CSV file
+    d3.csv("https://raw.githubusercontent.com/Prateek-sn-coder/18CSE301J_RA2011003010491/main/My_Dataset.csv").then(function(data) {
+
+      // Extract the list of departments from the data
+      const departments = Array.from(new Set(data.map(d => d.AGG_DESC_LABEL)));
+
+      // Populate the department selection dropdown
+      d3.select("#department")
+        .selectAll("option")
+        .data(departments)
+        .join("option")
+        .text(d => d);
+
+      // Create the initial chart with default department
+      updateChart(departments[0]);
+
+      // Add an event listener to the department selection dropdown
+      d3.select("#department").on("change", function() {
+        updateChart(this.value);
+      });
+
+      // Function to update the chart with the selected department
+      function updateChart(selectedDepartment) {
+
+        // Filter the data by the selected department and years 2017-2021
+        const filteredData = data.filter(d => d.AGG_DESC_LABEL === selectedDepartment && d.YEAR >= 2017 && d.YEAR <= 2021);
+
+        // Group the filtered data by year and calculate the average FT_PAY for each year
+        const groupedData = d3.group(filteredData, d => d.YEAR);
+        const qData = Array.from(groupedData, ([key, values]) => ({
+          year: key,
+          q1: d3.quantile(values.map(d => +d.FT_PAY), 0.25),
+          median: d3.median(values.map(d => +d.FT_PAY)),
+          q3: d3.quantile(values.map(d => +d.FT_PAY), 0.75)
+        }));
+        d3.selectAll(".box").remove();
+    d3.selectAll(".median").remove();
+    d3.selectAll(".axis").remove();
+  // Remove the y-axis and label
+
+
+        // Set the dimensions of the chart
+        const width = 800;
+        const height = 400;
+        const margin = { top: 20, right: 20, bottom: 40, left: 150 };
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+        // Set the scales for the x and y axes
+        const xScale = d3.scaleBand()
+          .domain(qData.map(d => d.year))
+          .range([0, chartWidth])
+          .padding(0.2);
+
+          
+        const yScale = d3.scaleLinear()
+          .domain([d3.min(qData, d => d.q1), d3.max(qData, d => d.q3)])
+          .range([chartHeight, 0]);
+
+        // Create the chart
+        const svg = d3.select("#chart")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
+         
+        // Add the x-axis and labels
+        const xAxis = d3.axisBottom(xScale);
+        svg.append("g")
+          .attr("transform", `translate(0, ${chartHeight      })`)
+      .call(xAxis);
+    svg.append("text")
+      .attr("text-anchor", "middle")
+      .attr("transform", `translate(${chartWidth/2}, ${chartHeight+margin.top+10})`)
+      .text("Year");
+
+    // Add the y-axis and labels
+    const yAxis = d3.axisLeft(yScale);
+    svg.append("g")
+      .call(yAxis);
+    
+    svg.append("text")
+      .attr("text-anchor", "middle")
+      .attr("transform", `translate(${-margin.left+10}, ${chartHeight/2}) rotate(-90)`)
+      .text("FT_PAY");
+
+   
+
+
+
+
+    // Add the q1, median, and q3 lines
+    svg.selectAll(".box")
+      .data(qData)
+      .join("line")
+      .attr("class", "box")
+      .attr("x1", d => xScale(d.year))
+      .attr("x2", d => xScale(d.year))
+      .attr("y1", d => yScale(d.q1))
+      .attr("y2", d => yScale(d.q3))
+      .attr("stroke", "black")
+      .attr("stroke-width", 1);
+    svg.selectAll(".median")
+      .data(qData)
+      .join("line")
+      .attr("class", "median")
+      .attr("x1", d => xScale(d.year) - 10)
+      .attr("x2", d => xScale(d.year) + 10)
+      .attr("y1", d => yScale(d.median))
+      .attr("y2", d => yScale(d.median))
+      .attr("stroke", "black")
+      .attr("stroke-width", 2);
+
+  }
+
+});
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

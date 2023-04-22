@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Donut Chart Viz</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="index.html">🏠</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNav">
+			<ul class="navbar-nav">
+				<li class="nav-item active">
+					<a class="nav-link" href="abt.html">About</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="tab.html">Tableau</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="gp.html">Gephi</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="pyv.html">Python</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="ddd.html">D3</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+    <center>
+        <br>
+    <h3>Donut Chart Visualization of FT-PAY by departments</h3>
+<br><br>
+    <div>
+        <label for="year-select">Select a year:</label>
+        <select id="year-select"></select>
+    </div>
+    <div id="chart-container"></div>
+</center>
+    <script>
+        // Load the dataset from a CSV file
+        d3.csv("https://raw.githubusercontent.com/Prateek-sn-coder/18CSE301J_RA2011003010491/main/My_Dataset.csv").then(function(data) {
+            // Extract the unique years from the dataset
+            var years = ["2017", "2018", "2019", "2020", "2021"];
+
+            // Populate the year select menu
+            d3.select("#year-select")
+                .selectAll("option")
+                .data(years)
+                .enter()
+                .append("option")
+                .text(function(d) { return d; });
+
+            // Set the initial year to the first year in the dataset
+            var currentYear = years[0];
+
+            // Create a function to filter the data by year
+            function filterDataByYear(data, year) {
+                return data.filter(function(d) { return d.YEAR === year; });
+            }
+
+            // Create a function to draw the donut chart
+            function drawDonutChart(data) {
+                 var width = 900;
+  var height = 900;
+  var radius = 350;
+
+  // Define the colors for the chart
+  var colors = d3.scaleOrdinal()
+      .domain(data.map(function(d) { return d.AGG_DESC_LABEL; }))
+      .range(d3.schemeCategory10);
+
+  // Create the SVG container for the chart
+  var svg = d3.select("#chart-container")
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+  // Define the arc for each section of the chart
+  var arc = d3.arc()
+      .innerRadius(radius * 0.5)
+      .outerRadius(radius * 0.9);
+
+  // Define the pie layout for the data
+  var pie = d3.pie()
+      .value(function(d) { return d.FT_PAY; });
+
+  // Generate the arcs for the sections of the chart
+  var arcs = svg.selectAll("arc")
+      .data(pie(data))
+      .enter()
+      .append("g")
+      .attr("class", "arc");
+
+  // Draw the sections of the chart
+  arcs.append("path")
+      .attr("d", arc)
+      .attr("fill", function(d) { return colors(d.data.AGG_DESC_LABEL); })
+      .on("mouseover", function(d) {
+        // Show label when mouse is over section
+        d3.select(this).transition()
+            .duration(200)
+            .attr("d", d3.arc()
+                .innerRadius(radius * 0.5)
+                .outerRadius(radius * 1.0));
+        svg.append("text")
+            .attr("class", "label")
+            .attr("transform", function() {
+              var midAngle = (d.endAngle - d.startAngle) / 2 + d.startAngle;
+              var x = Math.sin(midAngle) * (radius + 10);
+              var y = -Math.cos(midAngle) * (radius + 10);
+              return "translate(" + x + "," + y + ")";
+            })
+            .text(function() {
+              return d.data.AGG_DESC_LABEL + " - $" + d.data.FT_PAY;
+            })
+            .attr("text-anchor", "middle")
+            .attr("font-size", "14px")
+            .attr("fill", "#000000");
+      })
+      .on("mouseout", function(d) {
+        // Hide label when mouse is not over section
+        d3.select(this).transition()
+            .duration(200)
+            .attr("d", arc);
+        svg.select(".label").remove();
+      });
+      arcs.append("text")
+    .attr("transform", function(d) {
+      return "translate(" + arc.centroid(d) + ")";
+    })
+    .attr("text-anchor", "middle")
+    .text(function(d) {
+        if (d.data.FT_PAY<1853013181)
+        return "";
+      return d.data.AGG_DESC_LABEL + " - $" + d.data.FT_PAY;
+    });
+            }
+
+            // Initialize the chart with the first year of data
+            var filteredData = filterDataByYear(data, currentYear);
+            drawDonutChart(filteredData);
+
+            // Set up the event listener for the year select menu
+            d3.select("#year-select").on("change", function() {
+// Get the selected year from the menu
+currentYear = this.value;
+            // Filter the data by the selected year
+            filteredData = filterDataByYear(data, currentYear);
+
+            // Remove the previous chart
+            d3.select("#chart-container").select("svg").remove();
+
+            // Draw the new chart
+            drawDonutChart(filteredData);
+        });
+    });
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
